@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CertPatrol Orchestrator{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white flex-shrink-0">
+            <div class="flex flex-col h-full">
+                <!-- Logo -->
+                <div class="flex items-center justify-center h-16 px-4 border-b border-gray-700">
+                    <img src="{{ url_for('static', filename='images/torito-certpatrol.svg') }}" alt="CertPatrol" class="h-8 w-8 brightness-0 invert">
+                    <h1 class="ml-3 text-3xl font-bold text-white">CertPatrol</h1>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                    <a href="/" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors {% if request.path == '/' %}bg-primary-600 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="/projects" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors {% if '/projects' in request.path %}bg-primary-600 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                        </svg>
+                        Projects
+                    </a>
+                </nav>
+                
+                <!-- Footer -->
+                <div class="p-4 border-t border-gray-700">
+                    <p class="text-xs text-gray-400 text-center">CertPatrol Orchestrator</p>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navigation Bar -->
+            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6">
+                <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h2>
+                
+                <!-- Project Switcher -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative" id="projectSwitcher">
+                        <button onclick="toggleProjectDropdown()" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700" id="currentProject">All Projects</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="projectDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                            <div class="py-2 max-h-64 overflow-y-auto" id="projectList">
+                                <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Projects</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+                {% block content %}{% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 px-6 py-3">
+                <a href="https://torito.io/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                    <img src="{{ url_for('static', filename='images/torito.svg') }}" alt="Torito" class="h-6 w-6">
+                    <span class="text-sm font-medium">Torito - Security & Privacy Tools</span>
+                </a>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Project switcher functionality
+        function toggleProjectDropdown() {
+            const dropdown = document.getElementById('projectDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const switcher = document.getElementById('projectSwitcher');
+            if (switcher && !switcher.contains(event.target)) {
+                document.getElementById('projectDropdown').classList.add('hidden');
+            }
+        });
+        
+        // Load projects for switcher
+        async function loadProjectSwitcher() {
+            try {
+                const res = await fetch('/api/projects');
+                const projects = await res.json();
+                const list = document.getElementById('projectList');
+                
+                // let html = '<a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium">All Projects</a><hr class="my-1">';
+                let html = '';
+                projects.forEach(p => {
+                    html += `<a href="/projects/${p.id}/searches" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${p.name}</a>`;
+                });
+                list.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+        
+        loadProjectSwitcher();
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

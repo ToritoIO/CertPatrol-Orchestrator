@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CertPatrol Orchestrator{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-3 mb-8">
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Total Projects</dt>
+                        <dd class="text-3xl font-bold text-gray-900" id="total-projects">-</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+                        <line x1="40" y1="64" x2="216" y2="64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <line x1="40" y1="128" x2="112" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <line x1="40" y1="192" x2="128" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <circle cx="184" cy="144" r="32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <line x1="206.63" y1="166.63" x2="232" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Active Searches</dt>
+                        <dd class="text-3xl font-bold text-green-600" id="active-searches">-</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                    <svg class="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+                        <circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <path d="M168,128c0,64-40,96-40,96s-40-32-40-96,40-96,40-96S168,64,168,128Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <line x1="37.46" y1="96" x2="218.54" y2="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        <line x1="37.46" y1="160" x2="218.54" y2="160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                    </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt class="text-sm font-medium text-gray-500 truncate">Domains Discovered</dt>
+                        <dd class="text-3xl font-bold text-purple-600" id="recent-results-count">-</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Projects with Running Searches -->
+<div class="bg-white shadow-sm rounded-xl border border-gray-200 mb-8">
+    <div class="px-6 py-3 border-b border-gray-200">
+        <h3 class="text-base font-semibold text-gray-900">Projects & Active Searches</h3>
+    </div>
+    <div class="p-4">
+        <div id="projects-list" class="space-y-3">
+            <p class="text-gray-500">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Discoveries Chart -->
+<div class="bg-white shadow-sm rounded-xl border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-4">
+        <h3 class="text-lg font-semibold text-gray-900">Discoveries Over Time</h3>
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <label for="startDate" class="text-sm font-medium text-gray-700">From:</label>
+                <input type="date" id="startDate" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="endDate" class="text-sm font-medium text-gray-700">To:</label>
+                <input type="date" id="endDate" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <button onclick="loadChart()" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Update
+            </button>
+        </div>
+    </div>
+    <div class="p-6">
+        <canvas id="discoveriesChart" height="80"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadDashboard() {
+        try {
+            // Load status
+            const statusRes = await fetch('/api/status');
+            const status = await statusRes.json();
+            
+            document.getElementById('total-projects').textContent = status.total_projects;
+            document.getElementById('active-searches').textContent = status.active_searches;
+            
+            // Load projects with searches
+            const projectsRes = await fetch('/api/projects');
+            const projects = await projectsRes.json();
+            
+            const projectsList = document.getElementById('projects-list');
+            if (projects.length === 0) {
+                projectsList.innerHTML = '<p class="text-gray-500 text-center py-8">No projects yet. <a href="/projects" class="text-blue-600 hover:text-blue-700 font-medium">Create your first project</a></p>';
+            } else {
+                let html = '';
+                let hasActiveSearches = false;
+                
+                for (const project of projects) {
+                    // Get searches for this project
+                    const searchesRes = await fetch(`/api/projects/${project.id}/searches`);
+                    const searches = await searchesRes.json();
+                    const runningSearches = searches.filter(s => s.status === 'running');
+                    
+                    // Only show projects with running searches
+                    if (runningSearches.length > 0) {
+                        hasActiveSearches = true;
+                        html += `
+                            <div class="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-sm font-semibold text-gray-900">${project.name}</h4>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <span class="w-1.5 h-1.5 mr-1 bg-green-400 rounded-full animate-pulse"></span>
+                                            ${runningSearches.length} running
+                                        </span>
+                                    </div>
+                                    <a href="/projects/${project.id}/searches" class="text-xs font-medium text-blue-600 hover:text-blue-700 whitespace-nowrap">
+                                        View →
+                                    </a>
+                                </div>
+                                <div class="space-y-1.5">
+                                    ${runningSearches.map(s => `
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-600">${s.name}</span>
+                                            <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono">${s.pattern}</code>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // If no projects have active searches, show a message
+                if (!hasActiveSearches) {
+                    projectsList.innerHTML = `
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            <p class="text-gray-600 mb-2">No active searches at the moment</p>
+                            <p class="text-sm text-gray-500 mb-4">Start a search from any project to begin monitoring</p>
+                            <a href="/projects" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                                Go to Projects →
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    projectsList.innerHTML = html;
+                }
+            }
+            
+            // Load total results count
+            const totalRes = await fetch('/api/results/total');
+            const totalData = await totalRes.json();
+            document.getElementById('recent-results-count').textContent = totalData.total;
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+    
+    // Chart
+    let chart = null;
+    
+    // Color palette for projects (vibrant colors)
+    const colors = [
+        { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgb(37, 99, 235)' },      // blue
+        { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgb(5, 150, 105)' },      // emerald
+        { bg: 'rgba(249, 115, 22, 0.15)', border: 'rgb(234, 88, 12)' },      // orange
+        { bg: 'rgba(139, 92, 246, 0.15)', border: 'rgb(124, 58, 237)' },     // violet
+        { bg: 'rgba(236, 72, 153, 0.15)', border: 'rgb(219, 39, 119)' },     // pink
+        { bg: 'rgba(14, 165, 233, 0.15)', border: 'rgb(2, 132, 199)' },      // sky
+        { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgb(217, 119, 6)' },      // amber
+        { bg: 'rgba(132, 204, 22, 0.15)', border: 'rgb(101, 163, 13)' },     // lime
+    ];
+    
+    async function loadChart() {
+        try {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            const res = await fetch(`/api/results/chart?start_date=${startDate}&end_date=${endDate}`);
+            const data = await res.json();
+            
+            // Destroy existing chart
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Prepare datasets
+            const datasets = data.projects.map((project, idx) => ({
+                label: project.name,
+                data: project.data,
+                backgroundColor: colors[idx % colors.length].bg,
+                borderColor: colors[idx % colors.length].border,
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: colors[idx % colors.length].border,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverBackgroundColor: colors[idx % colors.length].border,
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2
+            }));
+            
+            // Create chart
+            const ctx = document.getElementById('discoveriesChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    onHover: (event, activeElements, chart) => {
+                        const canvas = event.native.target;
+                        const legend = chart.legend;
+                        
+                        // Check if hovering over legend
+                        if (legend && legend.hitBoxes) {
+                            const x = event.x;
+                            const y = event.y;
+                            let hovering = false;
+                            
+                            for (const hitBox of legend.hitBoxes) {
+                                if (x >= hitBox.left && x <= hitBox.left + hitBox.width &&
+                                    y >= hitBox.top && y <= hitBox.top + hitBox.height) {
+                                    hovering = true;
+                                    break;
+                                }
+                            }
+                            
+                            canvas.style.cursor = hovering ? 'pointer' : 'default';
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            align: 'center',
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const chart = legend.chart;
+                                const meta = chart.getDatasetMeta(index);
+                                
+                                // Toggle visibility
+                                meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                                
+                                // Update chart
+                                chart.update();
+                            },
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: {
+                                    size: 13,
+                                    weight: '500',
+                                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                                },
+                                color: '#374151',
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                generateLabels: function(chart) {
+                                    const datasets = chart.data.datasets;
+                                    return datasets.map((dataset, i) => ({
+                                        text: dataset.label,
+                                        fillStyle: dataset.borderColor,
+                                        strokeStyle: dataset.borderColor,
+                                        lineWidth: 2,
+                                        hidden: !chart.isDatasetVisible(i),
+                                        index: i,
+                                        datasetIndex: i,
+                                        pointStyle: 'circle'
+                                    }));
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: {
+                                size: 13,
+                                weight: '600'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            bodySpacing: 6,
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            displayColors: true,
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            boxPadding: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.dataset.label + ': ' + context.parsed.y + ' domains';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '500'
+                                },
+                                color: '#6B7280',
+                                padding: 8
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            border: {
+                                display: false
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.04)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '500'
+                                },
+                                color: '#6B7280',
+                                precision: 0,
+                                padding: 8
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading chart:', error);
+        }
+    }
+    
+    // Initialize date inputs to last 30 days
+    function initDatePickers() {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        
+        document.getElementById('startDate').valueAsDate = startDate;
+        document.getElementById('endDate').valueAsDate = endDate;
+    }
+    
+    // Load dashboard on page load
+    loadDashboard();
+    initDatePickers();
+    loadChart();
+    
+    // Refresh stats every 5 seconds (not the chart)
+    setInterval(loadDashboard, 5000);
+</script>
+{% endblock %}

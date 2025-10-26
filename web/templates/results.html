@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ search.name }} - CertPatrol Orchestrator{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-0">
+    <!-- Breadcrumbs -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/projects" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Projects
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="/projects/{{ search.project_id }}/searches" class="ml-1 text-sm font-medium text-gray-600 hover:text-blue-600 md:ml-2" id="project-breadcrumb">Project</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-700 md:ml-2">{{ search.name }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">{{ search.name }}</h2>
+        <p class="text-gray-600 mt-1">Pattern: <code class="bg-gray-100 px-2 py-1 rounded">{{ search.pattern }}</code></p>
+    </div>
+
+    <!-- Stats & Controls -->
+    <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-8">
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Total Results</p>
+                    <p class="text-3xl font-bold text-gray-900" id="total-results">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Status</p>
+                    <p class="text-lg font-semibold flex items-center" id="search-status-display">
+                        <span id="search-status">-</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3" id="search-controls">
+                <!-- Controls will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Discovered Domains</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discovered At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="2" class="px-6 py-4 text-sm text-gray-500">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="flex justify-between items-center mt-4">
+                <button id="prevBtn" onclick="prevPage()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50" disabled>
+                    Previous
+                </button>
+                <span class="text-sm text-gray-600">
+                    Page <span id="currentPage">1</span>
+                </span>
+                <button id="nextBtn" onclick="nextPage()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const searchId = {{ search.id }};
+    const projectId = {{ search.project_id }};
+    let currentOffset = 0;
+    const limit = 50;
+    let totalResults = 0;
+    
+    // Load project name for breadcrumb
+    async function loadProjectName() {
+        try {
+            const res = await fetch(`/api/projects/${projectId}`);
+            const project = await res.json();
+            document.getElementById('project-breadcrumb').textContent = project.name;
+        } catch (error) {
+            console.error('Error loading project name:', error);
+        }
+    }
+    
+    async function loadResults() {
+        try {
+            const res = await fetch(`/api/searches/${searchId}/results?limit=${limit}&offset=${currentOffset}`);
+            const data = await res.json();
+            
+            totalResults = data.total;
+            document.getElementById('total-results').textContent = totalResults;
+            
+            const table = document.getElementById('results-table');
+            if (data.results.length === 0 && currentOffset === 0) {
+                table.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-sm text-gray-500">No results yet</td></tr>';
+            } else if (data.results.length === 0) {
+                table.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-sm text-gray-500">No more results</td></tr>';
+            } else {
+                table.innerHTML = data.results.map(r => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${r.domain}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(r.discovered_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            // Update pagination buttons
+            document.getElementById('prevBtn').disabled = currentOffset === 0;
+            document.getElementById('nextBtn').disabled = currentOffset + limit >= totalResults;
+            document.getElementById('currentPage').textContent = Math.floor(currentOffset / limit) + 1;
+            
+            // Load search status and controls
+            const statusRes = await fetch(`/api/searches/${searchId}`);
+            const search = await statusRes.json();
+            const statusEl = document.getElementById('search-status');
+            
+            // Update status display
+            let statusHTML = '';
+            if (search.status === 'running') {
+                statusHTML = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"><span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse"></span>RUNNING</span>';
+            } else if (search.status === 'stopped') {
+                statusHTML = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">STOPPED</span>';
+            } else {
+                statusHTML = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">CRASHED</span>';
+            }
+            statusEl.innerHTML = statusHTML;
+            
+            // Update controls
+            const controlsEl = document.getElementById('search-controls');
+            let controlsHTML = '';
+            if (search.status === 'stopped' || search.status === 'crashed') {
+                controlsHTML = `
+                    <button onclick="startSearch()" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Start Search
+                    </button>
+                `;
+            } else {
+                controlsHTML = `
+                    <button onclick="stopSearch()" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                        </svg>
+                        Stop Search
+                    </button>
+                `;
+            }
+            controlsEl.innerHTML = controlsHTML;
+        } catch (error) {
+            console.error('Error loading results:', error);
+        }
+    }
+    
+    function nextPage() {
+        if (currentOffset + limit < totalResults) {
+            currentOffset += limit;
+            loadResults();
+        }
+    }
+    
+    function prevPage() {
+        if (currentOffset > 0) {
+            currentOffset -= limit;
+            loadResults();
+        }
+    }
+    
+    async function startSearch() {
+        try {
+            const res = await fetch(`/api/searches/${searchId}/start`, {method: 'POST'});
+            if (res.ok) {
+                setTimeout(loadResults, 500);
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error starting search: ' + error);
+        }
+    }
+    
+    async function stopSearch() {
+        if (!confirm('Stop this search?')) return;
+        try {
+            const res = await fetch(`/api/searches/${searchId}/stop`, {method: 'POST'});
+            if (res.ok) {
+                setTimeout(loadResults, 500);
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error stopping search: ' + error);
+        }
+    }
+    
+    loadProjectName();
+    loadResults();
+    setInterval(loadResults, 5000); // Refresh every 5 seconds
+</script>
+{% endblock %}
+

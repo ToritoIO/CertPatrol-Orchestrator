@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - CertPatrol Orchestrator{% endblock %}
+{% block page_title %}Projects{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav class="flex mb-6" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <span class="text-sm font-medium text-gray-700">Projects</span>
+        </li>
+    </ol>
+</nav>
+
+<div class="flex justify-between items-center mb-6">
+    <p class="text-gray-600">Organize your certificate transparency monitoring into projects</p>
+    <button onclick="showCreateProjectModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Project
+    </button>
+</div>
+
+<!-- Projects Grid -->
+<div id="projects-list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <p class="text-gray-500 col-span-full text-center py-12">Loading...</p>
+</div>
+
+<!-- Create Project Modal -->
+<div id="createProjectModal" class="hidden fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form onsubmit="createProject(event)">
+                <div class="bg-white px-6 pt-5 pb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Create New Project</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Name*</label>
+                            <input type="text" id="projectName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="projectDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="hideCreateProjectModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div id="editProjectModal" class="hidden fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form onsubmit="updateProject(event)">
+                <div class="bg-white px-6 pt-5 pb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Edit Project</h3>
+                    <input type="hidden" id="editProjectId">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Name*</label>
+                            <input type="text" id="editProjectName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="editProjectDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="hideEditProjectModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Update Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadProjects() {
+        try {
+            const res = await fetch('/api/projects');
+            const projects = await res.json();
+            
+            const list = document.getElementById('projects-list');
+            if (projects.length === 0) {
+                list.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500 mb-4">No projects yet</p><button onclick="showCreateProjectModal()" class="text-blue-600 hover:text-blue-700 font-medium">Create your first project →</button></div>';
+            } else {
+                list.innerHTML = projects.map(p => `
+                    <div onclick="window.location.href='/projects/${p.id}/searches'" class="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden group cursor-pointer">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">${p.name}</h3>
+                                    <button onclick="showEditProjectModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}', event)" class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit project">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">${p.search_count} searches</span>
+                            </div>
+                            ${p.description ? `<p class="text-sm text-gray-600 mb-4">${p.description}</p>` : '<p class="text-sm text-gray-400 mb-4 italic">No description</p>'}
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                <a href="/projects/${p.id}/searches" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                                    View Searches
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </a>
+                                <button onclick="deleteProject(${p.id}, '${p.name.replace(/'/g, "\\'")}', event)" class="text-sm text-red-600 hover:text-red-700 font-medium">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading projects:', error);
+        }
+    }
+    
+    function showCreateProjectModal() {
+        document.getElementById('createProjectModal').classList.remove('hidden');
+    }
+    
+    function hideCreateProjectModal() {
+        document.getElementById('createProjectModal').classList.add('hidden');
+        document.getElementById('projectName').value = '';
+        document.getElementById('projectDescription').value = '';
+    }
+    
+    async function createProject(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('projectName').value;
+        const description = document.getElementById('projectDescription').value;
+        
+        try {
+            const res = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            });
+            
+            if (res.ok) {
+                hideCreateProjectModal();
+                loadProjects();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error creating project: ' + error);
+        }
+    }
+    
+    function showEditProjectModal(id, name, description, event) {
+        event.stopPropagation();
+        document.getElementById('editProjectId').value = id;
+        document.getElementById('editProjectName').value = name;
+        document.getElementById('editProjectDescription').value = description;
+        document.getElementById('editProjectModal').classList.remove('hidden');
+    }
+    
+    function hideEditProjectModal() {
+        document.getElementById('editProjectModal').classList.add('hidden');
+    }
+    
+    async function updateProject(event) {
+        event.preventDefault();
+        
+        const id = document.getElementById('editProjectId').value;
+        const name = document.getElementById('editProjectName').value;
+        const description = document.getElementById('editProjectDescription').value;
+        
+        try {
+            const res = await fetch(`/api/projects/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            });
+            
+            if (res.ok) {
+                hideEditProjectModal();
+                loadProjects();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error updating project: ' + error);
+        }
+    }
+    
+    async function deleteProject(id, name, event) {
+        event.stopPropagation();
+        
+        if (!confirm(`Delete project "${name}" and all its searches?`)) {
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/api/projects/${id}`, {method: 'DELETE'});
+            if (res.ok) {
+                loadProjects();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error deleting project: ' + error);
+        }
+    }
+    
+    loadProjects();
+</script>
+{% endblock %}

@@ -1,0 +1,743 @@
+{% extends "base.html" %}
+
+{% block title %}Searches - {{ project.name }} - CertPatrol Orchestrator{% endblock %}
+{% block page_title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav class="flex mb-6" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="/projects" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                </svg>
+                Projects
+            </a>
+        </li>
+        <li>
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="ml-1 text-sm font-medium text-gray-700 md:ml-2">{{ project.name }}</span>
+            </div>
+        </li>
+    </ol>
+</nav>
+
+<div class="mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <div class="flex items-center space-x-2">
+                <h2 class="text-2xl font-bold text-gray-900">{{ project.name }}</h2>
+                <button onclick="showEditProjectModal()" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit project">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                </button>
+            </div>
+            {% if project.description %}
+            <p class="text-gray-600 mt-1">{{ project.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="start-all-btn" onclick="startAllSearches()" class="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Start All
+            </button>
+            <button id="stop-all-btn" onclick="stopAllSearches()" class="inline-flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                </svg>
+                Stop All
+            </button>
+            <button onclick="showCreateSearchModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                New Search
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Searches List -->
+<div id="searches-list" class="space-y-4">
+    <p class="text-gray-500 text-center py-12">Loading...</p>
+</div>
+
+<!-- Create Search Modal -->
+<div id="createSearchModal" class="hidden fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="createSearchForm" onsubmit="createSearch(event)">
+                <div class="bg-white px-6 pt-5 pb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Create New Search</h3>
+                    <div class="space-y-4">
+                        <!-- Basic Settings -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Search Name*</label>
+                            <input type="text" id="searchName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                Regex Pattern*
+                                <span class="ml-1 group relative">
+                                    <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Regular expression to match domain names (e.g., "bank|card", "api.*\.google\.com$")</span>
+                                </span>
+                            </label>
+                            <input type="text" id="searchPattern" required placeholder="e.g., bank|card" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                        </div>
+                        
+                        <!-- Basic Performance Settings -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                    Batch Size
+                                    <span class="ml-1 group relative">
+                                        <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Number of entries to fetch per request. Higher values = faster but more memory.</span>
+                                    </span>
+                                </label>
+                                <input type="number" id="searchBatch" value="256" min="1" max="1024" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                    Poll Sleep (s)
+                                    <span class="ml-1 group relative">
+                                        <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Initial poll interval. Adapts automatically based on activity.</span>
+                                    </span>
+                                </label>
+                                <input type="number" id="searchSleep" value="3.0" step="0.1" min="0.1" max="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <!-- eTLD+1 Option -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="etld1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Match base domains only (eTLD+1)</span>
+                                <span class="ml-1 group relative">
+                                    <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 bg-gray-900 text-white text-xs rounded px-3 py-2 z-50 whitespace-normal">Match against base domains only (e.g., example.co.uk instead of subdomain.example.co.uk). Requires tldextract.</span>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <!-- CT Logs Selector -->
+                        <div class="border border-gray-200 rounded-lg">
+                            <button type="button" onclick="toggleCtLogsSection('create')" class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors rounded-lg">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-700">CT Logs to Monitor</span>
+                                    <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Optional</span>
+                                </div>
+                                <svg id="createCtLogsChevron" class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="createCtLogsContent" class="hidden px-4 pb-4 max-h-64 overflow-y-auto">
+                                <p class="text-xs text-gray-500 my-3">Leave unselected to monitor all CT logs, or choose specific providers:</p>
+                                <div id="createCtLogsProviders" class="space-y-2">
+                                    <div class="text-center py-4 text-gray-400 text-sm">Loading CT logs...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="hideCreateSearchModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Create Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div id="editSearchModal" class="hidden fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="editSearchForm" onsubmit="updateSearch(event)">
+                <div class="bg-white px-6 pt-5 pb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Edit Search</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Search Name*</label>
+                            <input type="text" id="editSearchName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                Regex Pattern*
+                                <span class="ml-1 group relative">
+                                    <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Regular expression to match domain names (e.g., "bank|card", "api.*\\.google\\.com$")</span>
+                                </span>
+                            </label>
+                            <input type="text" id="editSearchPattern" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                    Batch Size
+                                    <span class="ml-1 group relative">
+                                        <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Number of entries to fetch per request. Higher values = faster but more memory.</span>
+                                    </span>
+                                </label>
+                                <input type="number" id="editSearchBatch" min="1" max="1024" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                    Poll Sleep (s)
+                                    <span class="ml-1 group relative">
+                                        <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="invisible group-hover:visible absolute left-6 top-0 w-64 bg-gray-900 text-white text-xs rounded px-2 py-1 z-50">Initial poll interval. Adapts automatically based on activity.</span>
+                                    </span>
+                                </label>
+                                <input type="number" id="editSearchSleep" step="0.1" min="0.1" max="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="editEtld1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-3">
+                                    <span class="block text-sm font-medium text-gray-700">Match eTLD+1 only</span>
+                                    <span class="text-xs text-gray-500">Match against base domains only (e.g., example.co.uk instead of subdomain.example.co.uk). Requires tldextract.</span>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg">
+                            <button type="button" onclick="toggleCtLogsSection('edit')" class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors rounded-lg">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-700">CT Logs to Monitor</span>
+                                    <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Optional</span>
+                                </div>
+                                <svg id="editCtLogsChevron" class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="editCtLogsContent" class="hidden px-4 pb-4 max-h-64 overflow-y-auto">
+                                <p class="text-xs text-gray-500 my-3">Leave unselected to monitor all CT logs, or choose specific providers:</p>
+                                <div id="editCtLogsProviders" class="space-y-2">
+                                    <div class="text-center py-4 text-gray-400 text-sm">Loading CT logs...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="hideEditSearchModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Update Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div id="editProjectModal" class="hidden fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form onsubmit="updateProject(event)">
+                <div class="bg-white px-6 pt-5 pb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Edit Project</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Name*</label>
+                            <input type="text" id="editProjectName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="editProjectDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="hideEditProjectModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Update Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const projectId = {{ project.id }};
+    
+    async function loadSearches() {
+        try {
+            const res = await fetch(`/api/projects/${projectId}/searches`);
+            const searches = await res.json();
+            
+            const list = document.getElementById('searches-list');
+            if (searches.length === 0) {
+                list.innerHTML = '<div class="text-center py-12"><p class="text-gray-500 mb-4">No searches yet</p><button onclick="showCreateSearchModal()" class="text-blue-600 hover:text-blue-700 font-medium">Create your first search →</button></div>';
+            } else {
+                list.innerHTML = searches.map(s => `
+                    <div onclick="window.location.href='/searches/${s.id}/results'" class="bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all p-4 cursor-pointer group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0 mr-4">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <h3 class="text-base font-semibold text-gray-900 truncate">${s.name}</h3>
+                                    ${getStatusBadge(s.status)}
+                                </div>
+                                <div class="flex items-center space-x-3 text-sm text-gray-500">
+                                    <code class="bg-gray-50 px-2 py-0.5 rounded text-xs font-mono text-gray-700">${s.pattern}</code>
+                                    <span class="text-gray-400">•</span>
+                                    <span class="font-medium">${s.result_count} ${s.result_count !== 1 ? 'results' : 'result'}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2" onclick="event.stopPropagation()">
+                                ${getActionButtons(s)}
+                                <button onclick="deleteSearch(${s.id}, '${s.name}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete search">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading searches:', error);
+        }
+    }
+    
+    function getStatusBadge(status) {
+        if (status === 'running') {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"><span class="w-1.5 h-1.5 mr-1 bg-green-500 rounded-full animate-pulse"></span>Running</span>';
+        } else if (status === 'stopped') {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Stopped</span>';
+        } else {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Crashed</span>';
+        }
+    }
+    
+    function getActionButtons(search) {
+        if (search.status === 'stopped' || search.status === 'crashed') {
+            return `
+                <button onclick="startSearch(${search.id})" class="inline-flex items-center px-2.5 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 rounded-lg transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Start
+                </button>
+            `;
+        } else {
+            return `
+                <button id="stop-btn-${search.id}" onclick="stopSearch(${search.id})" class="inline-flex items-center px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                    </svg>
+                    Stop
+                </button>
+            `;
+        }
+    }
+    
+    function showCreateSearchModal() {
+        document.getElementById('createSearchModal').classList.remove('hidden');
+        loadCTLogs();
+    }
+    
+    function hideCreateSearchModal() {
+        document.getElementById('createSearchModal').classList.add('hidden');
+    }
+    
+    function toggleCTLogsSection() {
+        const content = document.getElementById('ctLogsContent');
+        const chevron = document.getElementById('ctLogsChevron');
+        content.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+    }
+    
+    let ctLogsData = {};
+    
+    async function loadCTLogs() {
+        try {
+            const res = await fetch('/api/ct-logs');
+            ctLogsData = await res.json();
+            
+            const container = document.getElementById('ctLogsProviders');
+            
+            if (Object.keys(ctLogsData).length === 0) {
+                container.innerHTML = '<div class="text-center py-2 text-gray-500 text-xs">Unable to load CT logs. Will use all available logs.</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const [provider, logs] of Object.entries(ctLogsData).sort()) {
+                html += `
+                    <div class="border-l-2 border-gray-200 pl-3">
+                        <label class="flex items-center cursor-pointer mb-2">
+                            <input type="checkbox" class="provider-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                   data-provider="${provider}" onchange="toggleProvider('${provider}', this.checked)">
+                            <span class="ml-2 text-sm font-medium text-gray-700">${provider}</span>
+                            <span class="ml-1 text-xs text-gray-500">(${logs.length} logs)</span>
+                        </label>
+                        <div class="ml-6 space-y-1" id="logs-${provider.replace(/[^a-zA-Z0-9]/g, '_')}">
+                            ${logs.map(log => `
+                                <label class="flex items-center cursor-pointer text-xs">
+                                    <input type="checkbox" class="log-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                           value="${log.name}" data-provider="${provider}">
+                                    <span class="ml-2 text-gray-600">${log.description}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading CT logs:', error);
+            document.getElementById('ctLogsProviders').innerHTML = 
+                '<div class="text-center py-2 text-gray-500 text-xs">Unable to load CT logs. Will use all available logs.</div>';
+        }
+    }
+    
+    function toggleProvider(provider, checked) {
+        const providerId = provider.replace(/[^a-zA-Z0-9]/g, '_');
+        const checkboxes = document.querySelectorAll(`#logs-${providerId} .log-checkbox`);
+        checkboxes.forEach(cb => cb.checked = checked);
+    }
+    
+    async function createSearch(event) {
+        event.preventDefault();
+        
+        // Basic fields
+        const name = document.getElementById('searchName').value;
+        const pattern = document.getElementById('searchPattern').value;
+        const batch_size = parseInt(document.getElementById('searchBatch').value);
+        const poll_sleep = parseFloat(document.getElementById('searchSleep').value);
+        
+        // Only eTLD+1 option is exposed to users
+        const etld1 = document.getElementById('etld1').checked;
+        
+        // Collect selected CT logs
+        const selectedLogs = Array.from(document.querySelectorAll('.log-checkbox:checked'))
+            .map(cb => cb.value);
+        const ct_logs = selectedLogs.length > 0 ? selectedLogs : null;
+        
+        // Use safe defaults for hidden options that could interfere with output parsing
+        const min_poll_sleep = 1.0;
+        const max_poll_sleep = 60.0;
+        const max_memory_mb = 100;
+        const verbose = false;  // Must be false - breaks output parsing
+        const quiet_warnings = true;  // Must be true - keeps output clean
+        const quiet_parse_errors = false;
+        const debug_all = false;  // Must be false - breaks output parsing
+        const checkpoint_prefix = null;  // Auto-generated
+        
+        try {
+            const res = await fetch('/api/searches', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    project_id: projectId,
+                    name,
+                    pattern,
+                    ct_logs,
+                    batch_size,
+                    poll_sleep,
+                    min_poll_sleep,
+                    max_poll_sleep,
+                    max_memory_mb,
+                    etld1,
+                    verbose,
+                    quiet_warnings,
+                    quiet_parse_errors,
+                    debug_all,
+                    checkpoint_prefix
+                })
+            });
+            
+            if (res.ok) {
+                hideCreateSearchModal();
+                loadSearches();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error creating search: ' + error);
+        }
+    }
+    
+    async function startSearch(id) {
+        try {
+            const res = await fetch(`/api/searches/${id}/start`, {method: 'POST'});
+            if (res.ok) {
+                setTimeout(loadSearches, 500);
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error starting search: ' + error);
+        }
+    }
+    
+    async function stopSearch(id) {
+        const btn = document.getElementById(`stop-btn-${id}`);
+        if (!btn) return;
+        
+        // Show loading state
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="w-3.5 h-3.5 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Stopping...
+        `;
+        
+        try {
+            const res = await fetch(`/api/searches/${id}/stop`, {method: 'POST'});
+            if (res.ok) {
+                setTimeout(loadSearches, 500);
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+                // Restore button on error
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        } catch (error) {
+            alert('Error stopping search: ' + error);
+            // Restore button on error
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+    
+    async function startAllSearches() {
+        const startAllBtn = document.getElementById('start-all-btn');
+        const stopAllBtn = document.getElementById('stop-all-btn');
+        const originalContent = startAllBtn.innerHTML;
+        
+        try {
+            const res = await fetch(`/api/projects/${projectId}/searches`);
+            const searches = await res.json();
+            const stoppedSearches = searches.filter(s => s.status === 'stopped');
+            
+            if (stoppedSearches.length === 0) {
+                alert('No stopped searches to start');
+                return;
+            }
+            
+            // Disable all buttons
+            startAllBtn.disabled = true;
+            stopAllBtn.disabled = true;
+            document.querySelectorAll('[id^="stop-btn-"]').forEach(btn => btn.disabled = true);
+            
+            startAllBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Starting all...
+            `;
+            
+            let started = 0;
+            let errors = 0;
+            
+            for (const search of stoppedSearches) {
+                try {
+                    const startRes = await fetch(`/api/searches/${search.id}/start`, {method: 'POST'});
+                    if (startRes.ok) {
+                        started++;
+                    } else {
+                        errors++;
+                    }
+                } catch (error) {
+                    errors++;
+                }
+            }
+            
+            setTimeout(loadSearches, 500);
+            
+            // Restore buttons
+            startAllBtn.disabled = false;
+            stopAllBtn.disabled = false;
+            startAllBtn.innerHTML = originalContent;
+            
+            if (errors > 0) {
+                alert(`Started ${started} searches. ${errors} failed to start.`);
+            }
+        } catch (error) {
+            alert('Error starting searches: ' + error);
+            // Restore on error
+            startAllBtn.disabled = false;
+            stopAllBtn.disabled = false;
+            startAllBtn.innerHTML = originalContent;
+        }
+    }
+    
+    async function stopAllSearches() {
+        const stopAllBtn = document.getElementById('stop-all-btn');
+        const startAllBtn = document.getElementById('start-all-btn');
+        const originalContent = stopAllBtn.innerHTML;
+        
+        try {
+            const res = await fetch(`/api/projects/${projectId}/searches`);
+            const searches = await res.json();
+            const runningSearches = searches.filter(s => s.status === 'running');
+            
+            if (runningSearches.length === 0) {
+                alert('No running searches to stop');
+                return;
+            }
+            
+            if (!confirm(`Stop all ${runningSearches.length} running searches?`)) {
+                return;
+            }
+            
+            // Disable all buttons
+            stopAllBtn.disabled = true;
+            startAllBtn.disabled = true;
+            document.querySelectorAll('[id^="stop-btn-"]').forEach(btn => btn.disabled = true);
+            
+            stopAllBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Stopping all...
+            `;
+            
+            let stopped = 0;
+            let errors = 0;
+            
+            for (const search of runningSearches) {
+                try {
+                    const stopRes = await fetch(`/api/searches/${search.id}/stop`, {method: 'POST'});
+                    if (stopRes.ok) {
+                        stopped++;
+                    } else {
+                        errors++;
+                    }
+                } catch (error) {
+                    errors++;
+                }
+            }
+            
+            setTimeout(loadSearches, 500);
+            
+            // Restore buttons
+            stopAllBtn.disabled = false;
+            startAllBtn.disabled = false;
+            stopAllBtn.innerHTML = originalContent;
+            
+            if (errors > 0) {
+                alert(`Stopped ${stopped} searches. ${errors} failed to stop.`);
+            }
+        } catch (error) {
+            alert('Error stopping searches: ' + error);
+            // Restore buttons on error
+            stopAllBtn.disabled = false;
+            startAllBtn.disabled = false;
+            stopAllBtn.innerHTML = originalContent;
+        }
+    }
+    
+    async function deleteSearch(id, name) {
+        if (!confirm(`Delete search "${name}" and all its results?`)) {
+            return;
+        }
+        
+        try {
+            const res = await fetch(`/api/searches/${id}`, {method: 'DELETE'});
+            if (res.ok) {
+                loadSearches();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error deleting search: ' + error);
+        }
+    }
+    
+    function showEditProjectModal() {
+        document.getElementById('editProjectName').value = '{{ project.name|safe }}';
+        document.getElementById('editProjectDescription').value = '{{ project.description|default("")|safe }}';
+        document.getElementById('editProjectModal').classList.remove('hidden');
+    }
+    
+    function hideEditProjectModal() {
+        document.getElementById('editProjectModal').classList.add('hidden');
+    }
+    
+    async function updateProject(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('editProjectName').value;
+        const description = document.getElementById('editProjectDescription').value;
+        
+        try {
+            const res = await fetch(`/api/projects/${projectId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, description})
+            });
+            
+            if (res.ok) {
+                hideEditProjectModal();
+                // Reload page to update the project name in the header
+                window.location.reload();
+            } else {
+                const error = await res.json();
+                alert('Error: ' + error.error);
+            }
+        } catch (error) {
+            alert('Error updating project: ' + error);
+        }
+    }
+    
+    loadSearches();
+    setInterval(loadSearches, 3000); // Refresh every 3 seconds
+</script>
+{% endblock %}
