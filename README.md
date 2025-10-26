@@ -2,7 +2,7 @@
 
 Process orchestration platform for managing multiple [CertPatrol](https://github.com/ToritoIO/CertPatrol) instances with a modern web interface.
 
-![CertPatrol Orchestrator](web/static/images/ogimage.png)
+![CertPatrol Orchestrator](web/static/images/dashboard.png)
 
 ## Features
 
