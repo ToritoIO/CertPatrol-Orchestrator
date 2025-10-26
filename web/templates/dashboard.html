@@ -87,11 +87,11 @@
         <form class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4" onsubmit="event.preventDefault(); loadChart();">
             <div class="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
                 <label for="startDate" class="text-sm font-medium text-gray-700 sm:whitespace-nowrap">From:</label>
-                <input type="date" id="startDate" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:w-44">
+                <input type="date" id="startDate" class="date-input w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:max-w-none sm:w-44 appearance-none">
             </div>
             <div class="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
                 <label for="endDate" class="text-sm font-medium text-gray-700 sm:whitespace-nowrap">To:</label>
-                <input type="date" id="endDate" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:w-44">
+                <input type="date" id="endDate" class="date-input w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:max-w-none sm:w-44 appearance-none">
             </div>
             <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
                 <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

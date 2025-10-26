@@ -206,6 +206,45 @@ input[type="radio"]:checked {
     border-color: #3b82f6;
 }
 
+/* Date inputs (ensure consistent styling across browsers, esp. iOS Safari) */
+.date-input {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #ffffff;
+    position: relative;
+    padding-right: 2.5rem;
+    min-height: 2.75rem;
+    line-height: 1.5;
+}
+
+.date-input::-webkit-date-and-time-value {
+    text-align: left;
+    padding: 0;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.date-input:focus::-webkit-calendar-picker-indicator {
+    opacity: 1;
+}
+
+.date-input::-moz-focus-inner {
+    border: 0;
+}
+
+.date-input::-ms-expand {
+    display: none;
+}
+
 /* Chart legend clickable styling */
 #discoveriesChart {
     cursor: default;
