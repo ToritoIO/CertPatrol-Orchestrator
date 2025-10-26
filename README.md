@@ -34,18 +34,6 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### Upgrading from Previous Version
-
-If you're upgrading from a previous version, run the migration script to add support for advanced search options:
-
-```bash
-python3 migrate_db.py
-# Or specify a custom database path:
-python3 migrate_db.py /path/to/certpatrol_manager.db
-```
-
-This will add new columns to the searches table for all the advanced CertPatrol options.
-
 ## Quick Start
 
 ### 1. Initialize the database
@@ -165,7 +153,7 @@ Environment variables:
 
 ## How It Works
 
-1. Manager spawns CertPatrol as subprocess: `python3 certpatrol.py -p <pattern> -c search_<id> -q`
+1. Manager spawns CertPatrol as subprocess: `certpatrol -p <pattern> -c search_<id> -q`
 2. Background thread reads stdout line-by-line
 3. Each line (domain) is saved to database
 4. Web UI queries database for display
