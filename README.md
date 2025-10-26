@@ -186,9 +186,4 @@ REST API available at `/api/*`:
 
 ## License
 
-MIT License
-
-## Author
-
-Martin Aberastegue - [Torito.io](https://torito.io)
-
+MIT License — see [LICENSE](https://github.com/ToritoIO/CertPatrol-Orchestrator/blob/main/LICENSE) file for details.
