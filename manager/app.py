@@ -14,9 +14,12 @@ from .database import db, Project, Search, Result
 from .process_manager import process_manager
 
 # Initialize Flask app
-app = Flask(__name__,
-           template_folder=os.path.join(os.path.dirname(__file__), '..', 'web', 'templates'),
-           static_folder=os.path.join(os.path.dirname(__file__), '..', 'web', 'static'))
+package_root = os.path.dirname(__file__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(package_root, 'web', 'templates'),
+    static_folder=os.path.join(package_root, 'web', 'static'),
+)
 app.config['SECRET_KEY'] = SECRET_KEY
 
 
