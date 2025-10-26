@@ -24,9 +24,9 @@ else:
 
 setup(
     name="certpatrol-orchestrator",
-    version="0.1.0",
+    version="0.1.1",
     author="Martin Aberastegue",
-    author_email="martin@torito.io",
+    author_email="martin.aberastegue@torito.io",
     description="Process orchestration platform for managing multiple CertPatrol instances",
     long_description=long_description,
     long_description_content_type="text/markdown",
