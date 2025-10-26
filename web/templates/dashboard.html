@@ -82,27 +82,29 @@
 
 <!-- Discoveries Chart -->
 <div class="bg-white shadow-sm rounded-xl border border-gray-200">
-    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-4">
+    <div class="px-4 py-4 border-b border-gray-200 sm:px-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 class="text-lg font-semibold text-gray-900">Discoveries Over Time</h3>
-        <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2">
-                <label for="startDate" class="text-sm font-medium text-gray-700">From:</label>
-                <input type="date" id="startDate" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <form class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4" onsubmit="event.preventDefault(); loadChart();">
+            <div class="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+                <label for="startDate" class="text-sm font-medium text-gray-700 sm:whitespace-nowrap">From:</label>
+                <input type="date" id="startDate" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:w-44">
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="endDate" class="text-sm font-medium text-gray-700">To:</label>
-                <input type="date" id="endDate" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="flex w-full flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+                <label for="endDate" class="text-sm font-medium text-gray-700 sm:whitespace-nowrap">To:</label>
+                <input type="date" id="endDate" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 sm:w-44">
             </div>
-            <button onclick="loadChart()" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
+                <svg class="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
                 Update
             </button>
-        </div>
+        </form>
     </div>
-    <div class="p-6">
-        <canvas id="discoveriesChart" height="80"></canvas>
+    <div class="px-4 py-4 sm:p-6">
+        <div class="relative">
+            <canvas id="discoveriesChart" class="w-full h-64"></canvas>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -210,10 +212,17 @@
     
     async function loadChart() {
         try {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+            const startInput = document.getElementById('startDate');
+            const endInput = document.getElementById('endDate');
             
-            const res = await fetch(`/api/results/chart?start_date=${startDate}&end_date=${endDate}`);
+            if (!startInput.value || !endInput.value) {
+                initDatePickers();
+            }
+            
+            const startDate = startInput.value;
+            const endDate = endInput.value;
+            
+            const res = await fetch(`/api/results/chart?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`);
             const data = await res.json();
             
             // Destroy existing chart
@@ -250,7 +259,8 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
+                    resizeDelay: 100,
                     interaction: {
                         mode: 'index',
                         intersect: false,
@@ -380,6 +390,11 @@
                         }
                     }
                 }
+            });
+            
+            // Defer resize to ensure container dimensions are applied
+            requestAnimationFrame(() => {
+                chart?.resize();
             });
         } catch (error) {
             console.error('Error loading chart:', error);

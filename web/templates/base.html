@@ -26,14 +26,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-gray-50">
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex min-h-screen">
+        <div id="sidebarBackdrop" class="fixed inset-0 z-30 hidden bg-black bg-opacity-40 md:hidden"></div>
         <!-- Sidebar -->
-        <aside class="w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white flex-shrink-0">
-            <div class="flex flex-col h-full">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 transform -translate-x-full bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-xl transition-transform duration-200 ease-in-out md:relative md:translate-x-0 md:flex md:flex-col md:shadow-none">
+            <div class="flex h-full flex-col">
                 <!-- Logo -->
-                <div class="flex items-center justify-center h-16 px-4 border-b border-gray-700">
-                    <img src="{{ url_for('static', filename='images/torito-certpatrol.svg') }}" alt="CertPatrol" class="h-8 w-8 brightness-0 invert">
-                    <h1 class="ml-3 text-3xl font-bold text-white">CertPatrol</h1>
+                <div class="flex items-center justify-between h-16 px-4 border-b border-gray-700">
+                    <div class="flex items-center">
+                        <img src="{{ url_for('static', filename='images/torito-certpatrol.svg') }}" alt="CertPatrol" class="h-8 w-8 brightness-0 invert">
+                        <h1 class="ml-3 text-2xl font-bold text-white md:text-3xl">CertPatrol</h1>
+                    </div>
+                    <button type="button" class="rounded-md p-2 text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-white md:hidden" onclick="closeSidebar()" aria-label="Close navigation">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
                 
                 <!-- Navigation -->
@@ -60,24 +68,31 @@
         </aside>
         
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex flex-1 flex-col overflow-hidden">
             <!-- Top Navigation Bar -->
-            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6">
-                <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h2>
+            <header class="flex flex-col gap-4 bg-white border-b border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div class="flex items-center gap-3">
+                    <button type="button" id="mobileSidebarToggle" class="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden" aria-label="Open navigation">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h2>
+                </div>
                 
                 <!-- Project Switcher -->
-                <div class="flex items-center space-x-4">
-                    <div class="relative" id="projectSwitcher">
-                        <button onclick="toggleProjectDropdown()" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                <div class="flex items-center sm:justify-end">
+                    <div class="relative w-full sm:w-auto" id="projectSwitcher">
+                        <button onclick="toggleProjectDropdown()" class="flex w-full items-center justify-between space-x-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 sm:w-auto">
                             <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
                             </svg>
-                            <span class="text-sm font-medium text-gray-700" id="currentProject">All Projects</span>
+                            <span class="flex-1 text-left sm:text-sm" id="currentProject">All Projects</span>
                             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div id="projectDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div id="projectDropdown" class="absolute right-0 z-50 mt-2 hidden w-full rounded-lg border border-gray-200 bg-white shadow-lg sm:w-64">
                             <div class="py-2 max-h-64 overflow-y-auto" id="projectList">
                                 <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Projects</a>
                             </div>
@@ -87,12 +102,12 @@
             </header>
             
             <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
                 {% block content %}{% endblock %}
             </main>
             
             <!-- Footer -->
-            <footer class="bg-white border-t border-gray-200 px-6 py-3">
+            <footer class="bg-white border-t border-gray-200 px-4 py-4 sm:px-6 sm:py-3">
                 <a href="https://torito.io/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
                     <img src="{{ url_for('static', filename='images/torito.svg') }}" alt="Torito" class="h-6 w-6">
                     <span class="text-sm font-medium">Torito - Security & Privacy Tools</span>
@@ -102,6 +117,82 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+            const mobileToggle = document.getElementById('mobileSidebarToggle');
+            const body = document.body;
+            const mdMediaQuery = window.matchMedia('(min-width: 768px)');
+            const scheduleResize = () => {
+                requestAnimationFrame(() => {
+                    window.dispatchEvent(new Event('resize'));
+                });
+            };
+            
+            function openSidebar() {
+                if (!sidebar || window.innerWidth >= 768) return;
+                sidebar.classList.remove('-translate-x-full');
+                if (sidebarBackdrop) {
+                    sidebarBackdrop.classList.remove('hidden');
+                }
+                body.classList.add('overflow-hidden');
+                setTimeout(scheduleResize, 220);
+            }
+            
+            function closeSidebar() {
+                if (!sidebar || window.innerWidth >= 768) return;
+                sidebar.classList.add('-translate-x-full');
+                if (sidebarBackdrop) {
+                    sidebarBackdrop.classList.add('hidden');
+                }
+                body.classList.remove('overflow-hidden');
+                setTimeout(scheduleResize, 220);
+            }
+            
+            window.openSidebar = openSidebar;
+            window.closeSidebar = closeSidebar;
+            window.toggleSidebar = () => {
+                if (!sidebar) return;
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    openSidebar();
+                } else {
+                    closeSidebar();
+                }
+            };
+            
+            mobileToggle?.addEventListener('click', openSidebar);
+            sidebarBackdrop?.addEventListener('click', closeSidebar);
+            window.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+            
+            function handleViewportChange(e) {
+                if (e.matches) {
+                    sidebar.classList.remove('-translate-x-full');
+                    body.classList.remove('overflow-hidden');
+                    sidebarBackdrop?.classList.add('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    body.classList.remove('overflow-hidden');
+                    sidebarBackdrop?.classList.add('hidden');
+                }
+                scheduleResize();
+            }
+            
+            handleViewportChange(mdMediaQuery);
+            mdMediaQuery.addEventListener('change', handleViewportChange);
+            
+            sidebar?.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768) {
+                        closeSidebar();
+                    }
+                });
+            });
+        });
+        
         // Project switcher functionality
         function toggleProjectDropdown() {
             const dropdown = document.getElementById('projectDropdown');
@@ -123,7 +214,6 @@
                 const projects = await res.json();
                 const list = document.getElementById('projectList');
                 
-                // let html = '<a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium">All Projects</a><hr class="my-1">';
                 let html = '';
                 projects.forEach(p => {
                     html += `<a href="/projects/${p.id}/searches" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${p.name}</a>`;

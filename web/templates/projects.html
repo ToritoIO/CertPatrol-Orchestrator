@@ -13,9 +13,9 @@
     </ol>
 </nav>
 
-<div class="flex justify-between items-center mb-6">
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <p class="text-gray-600">Organize your certificate transparency monitoring into projects</p>
-    <button onclick="showCreateProjectModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+    <button onclick="showCreateProjectModal()" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto w-full">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
@@ -108,8 +108,8 @@
                 list.innerHTML = projects.map(p => `
                     <div onclick="window.location.href='/projects/${p.id}/searches'" class="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden group cursor-pointer">
                         <div class="p-6">
-                            <div class="flex items-start justify-between mb-3">
-                                <div class="flex items-center space-x-2">
+                            <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">${p.name}</h3>
                                     <button onclick="showEditProjectModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}', event)" class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit project">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,17 +117,17 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">${p.search_count} searches</span>
+                                <span class="inline-flex w-max rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 sm:self-auto self-start">${p.search_count} searches</span>
                             </div>
                             ${p.description ? `<p class="text-sm text-gray-600 mb-4">${p.description}</p>` : '<p class="text-sm text-gray-400 mb-4 italic">No description</p>'}
-                            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                                <a href="/projects/${p.id}/searches" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            <div class="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                <a href="/projects/${p.id}/searches" class="inline-flex w-full items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-700 sm:w-auto">
                                     View Searches
                                     <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </a>
-                                <button onclick="deleteProject(${p.id}, '${p.name.replace(/'/g, "\\'")}', event)" class="text-sm text-red-600 hover:text-red-700 font-medium">
+                                <button onclick="deleteProject(${p.id}, '${p.name.replace(/'/g, "\\'")}', event)" class="w-full text-sm font-medium text-red-600 hover:text-red-700 sm:w-auto">
                                     Delete
                                 </button>
                             </div>

@@ -5,8 +5,8 @@
 {% block content %}
 <div class="px-4 sm:px-0">
     <!-- Breadcrumbs -->
-    <nav class="flex mb-6" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+    <nav class="flex flex-wrap mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex flex-wrap items-center gap-1 md:gap-3">
             <li class="inline-flex items-center">
                 <a href="/projects" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -41,8 +41,8 @@
 
     <!-- Stats & Controls -->
     <div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 mb-6">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-8">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="flex flex-wrap items-center gap-6 md:gap-8">
                 <div>
                     <p class="text-sm text-gray-500 mb-1">Total Results</p>
                     <p class="text-3xl font-bold text-gray-900" id="total-results">-</p>
@@ -54,7 +54,7 @@
                     </p>
                 </div>
             </div>
-            <div class="flex items-center space-x-3" id="search-controls">
+            <div class="flex flex-wrap items-center gap-2" id="search-controls">
                 <!-- Controls will be loaded here -->
             </div>
         </div>
@@ -81,14 +81,14 @@
             </div>
             
             <!-- Pagination -->
-            <div class="flex justify-between items-center mt-4">
-                <button id="prevBtn" onclick="prevPage()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50" disabled>
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <button id="prevBtn" onclick="prevPage()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50 sm:w-auto" disabled>
                     Previous
                 </button>
                 <span class="text-sm text-gray-600">
                     Page <span id="currentPage">1</span>
                 </span>
-                <button id="nextBtn" onclick="nextPage()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50">
+                <button id="nextBtn" onclick="nextPage()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm font-medium disabled:opacity-50 sm:w-auto">
                     Next
                 </button>
             </div>
@@ -164,7 +164,7 @@
             let controlsHTML = '';
             if (search.status === 'stopped' || search.status === 'crashed') {
                 controlsHTML = `
-                    <button onclick="startSearch()" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    <button onclick="startSearch()" class="inline-flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -174,11 +174,11 @@
                 `;
             } else {
                 controlsHTML = `
-                    <button onclick="stopSearch()" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    <button onclick="stopSearch()" class="inline-flex w-full items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 sm:w-auto">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
-                        </svg>
+                       </svg>
                         Stop Search
                     </button>
                 `;
@@ -237,4 +237,3 @@
     setInterval(loadResults, 5000); // Refresh every 5 seconds
 </script>
 {% endblock %}
-

@@ -5,8 +5,8 @@
 
 {% block content %}
 <!-- Breadcrumbs -->
-<nav class="flex mb-6" aria-label="Breadcrumb">
-    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+<nav class="flex flex-wrap mb-6" aria-label="Breadcrumb">
+    <ol class="inline-flex flex-wrap items-center gap-1 md:gap-3">
         <li class="inline-flex items-center">
             <a href="/projects" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600">
                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -27,7 +27,7 @@
 </nav>
 
 <div class="mb-6">
-    <div class="flex justify-between items-start">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
             <div class="flex items-center space-x-2">
                 <h2 class="text-2xl font-bold text-gray-900">{{ project.name }}</h2>
@@ -41,22 +41,22 @@
             <p class="text-gray-600 mt-1">{{ project.description }}</p>
             {% endif %}
         </div>
-        <div class="flex items-center gap-2">
-            <button id="start-all-btn" onclick="startAllSearches()" class="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <div class="flex flex-wrap items-center gap-2">
+            <button id="start-all-btn" onclick="startAllSearches()" class="inline-flex w-full items-center justify-center rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 sm:w-auto">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Start All
             </button>
-            <button id="stop-all-btn" onclick="stopAllSearches()" class="inline-flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <button id="stop-all-btn" onclick="stopAllSearches()" class="inline-flex w-full items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 sm:w-auto">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
                 </svg>
                 Stop All
             </button>
-            <button onclick="showCreateSearchModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <button onclick="showCreateSearchModal()" class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:w-auto">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -317,19 +317,19 @@
             } else {
                 list.innerHTML = searches.map(s => `
                     <div onclick="window.location.href='/searches/${s.id}/results'" class="bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all p-4 cursor-pointer group">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 min-w-0 mr-4">
-                                <div class="flex items-center space-x-2 mb-1">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex-1 min-w-0 sm:mr-4">
+                                <div class="mb-1 flex flex-wrap items-center gap-2">
                                     <h3 class="text-base font-semibold text-gray-900 truncate">${s.name}</h3>
                                     ${getStatusBadge(s.status)}
                                 </div>
-                                <div class="flex items-center space-x-3 text-sm text-gray-500">
+                                <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500">
                                     <code class="bg-gray-50 px-2 py-0.5 rounded text-xs font-mono text-gray-700">${s.pattern}</code>
-                                    <span class="text-gray-400">•</span>
+                                    <span class="hidden text-gray-400 sm:inline">•</span>
                                     <span class="font-medium">${s.result_count} ${s.result_count !== 1 ? 'results' : 'result'}</span>
                                 </div>
                             </div>
-                            <div class="flex items-center space-x-2" onclick="event.stopPropagation()">
+                            <div class="flex flex-wrap items-center gap-2 justify-start sm:justify-end" onclick="event.stopPropagation()">
                                 ${getActionButtons(s)}
                                 <button onclick="deleteSearch(${s.id}, '${s.name}')" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete search">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,7 +367,7 @@
 
         if (search.status === 'stopped' || search.status === 'crashed') {
             buttons.push(`
-                <button onclick="startSearch(${search.id})" class="inline-flex items-center px-2.5 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 rounded-lg transition-colors">
+                <button onclick="startSearch(${search.id})" class="inline-flex w-full items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-50 sm:w-auto">
                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -377,7 +377,7 @@
             `);
         } else {
             buttons.push(`
-                <button id="stop-btn-${search.id}" onclick="stopSearch(${search.id})" class="inline-flex items-center px-2.5 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                <button id="stop-btn-${search.id}" onclick="stopSearch(${search.id})" class="inline-flex w-full items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 sm:w-auto">
                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
