@@ -24,15 +24,18 @@ CertPatrol Orchestrator acts as a process orchestration platform that:
 
 ## Installation
 
+Install the latest release from PyPI:
+
 ```bash
-# Clone the repository
+pip install certpatrol-orchestrator
+```
+
+Or install from source:
+
+```bash
 git clone https://github.com/ToritoIO/CertPatrol-Orchestrator.git
 cd CertPatrol-Orchestrator
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Or install as package
 pip install -e .
 ```
 
