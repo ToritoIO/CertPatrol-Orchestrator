@@ -22,9 +22,10 @@ def cmd_init(args):
 
 def cmd_server(args):
     """Start the web server"""
-    print(f"Starting CertPatrol Orchestrator web server on {args.host}:{args.port}")
-    print(f"Open http://{args.host}:{args.port} in your browser")
-    run_server(host=args.host, port=args.port, debug=args.debug)
+    port = args.port
+    print(f"Starting CertPatrol Orchestrator web server on {HOST}:{port}")
+    print(f"Open http://{HOST}:{port} in your browser")
+    run_server(port=port, debug=args.debug)
     return 0
 
 
@@ -207,8 +208,7 @@ def main():
     
     # server command
     parser_server = subparsers.add_parser('server', help='Start web server')
-    parser_server.add_argument('--host', default=HOST, help=f'Host to bind to (default: {HOST})')
-    parser_server.add_argument('--port', type=int, default=PORT, help=f'Port to bind to (default: {PORT})')
+    parser_server.add_argument('--port', '-p', type=int, default=PORT, help=f'Port to bind to (default: {PORT})')
     parser_server.add_argument('--debug', action='store_true', default=DEBUG, help='Enable debug mode')
     parser_server.set_defaults(func=cmd_server)
     
@@ -262,4 +262,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

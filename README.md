@@ -50,6 +50,8 @@ certpatrol-orch init
 
 ```bash
 certpatrol-orch server
+# or pick a different port
+# certpatrol-orch server --port 9090
 ```
 
 Then open http://127.0.0.1:8080 in your browser.
@@ -84,7 +86,7 @@ certpatrol-orch status
 
 ```bash
 certpatrol-orch init                          # Initialize database
-certpatrol-orch server [--host] [--port]      # Start web server
+certpatrol-orch server [--port | -p]          # Start web server
 certpatrol-orch add-project <name>            # Create project
 certpatrol-orch list-projects                 # List all projects
 certpatrol-orch add-search <project> <name> <pattern>  # Add search
