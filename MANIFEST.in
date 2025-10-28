@@ -2,3 +2,4 @@ include LICENSE
 include README.md
 include requirements.txt
 recursive-include manager/web *
+recursive-include manager/data *

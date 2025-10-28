@@ -51,3 +51,4 @@ checkpoints/
 *.log
 
 migrate_db.py
+MANIFEST.in

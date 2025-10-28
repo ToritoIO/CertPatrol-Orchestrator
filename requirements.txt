@@ -1,7 +1,9 @@
 Flask>=3.0.0
 SQLAlchemy>=2.0.0
 requests>=2.31.0
+PyYAML>=6.0
+tld>=0.13
+rapidfuzz>=3.0
 
 # Optional: Production WSGI server
 waitress>=2.1.2
-

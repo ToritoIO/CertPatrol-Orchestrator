@@ -385,15 +385,29 @@ def get_search_results(search_id):
     try:
         limit = request.args.get('limit', 100, type=int)
         offset = request.args.get('offset', 0, type=int)
+        min_score = request.args.get('min_score', type=int)
+        risk = request.args.get('risk')
+        if risk:
+            risk = risk.lower()
         
-        results = db.get_results(search_id, limit, offset)
-        total = db.count_results(search_id)
+        results = db.get_results(
+            search_id,
+            limit,
+            offset,
+            min_score=min_score,
+            risk=risk,
+        )
+        total = db.count_results(search_id, min_score=min_score, risk=risk)
         
         return jsonify({
             "results": [r.to_dict() for r in results],
             "total": total,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "filters": {
+                "min_score": min_score,
+                "risk": risk,
+            },
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

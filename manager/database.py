@@ -4,8 +4,20 @@ Database models and operations for CertPatrol Orchestrator
 import json
 import os
 from datetime import datetime
-from typing import List, Optional
-from sqlalchemy import create_engine, Column, Integer, String, Text, Float, DateTime, ForeignKey, event
+from typing import Dict, List, Optional
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Text,
+    Float,
+    DateTime,
+    ForeignKey,
+    event,
+    inspect,
+    text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, scoped_session, joinedload
 from sqlalchemy.engine import Engine
@@ -135,6 +147,11 @@ class Result(Base):
     search_id = Column(Integer, ForeignKey("searches.id", ondelete="CASCADE"), nullable=False)
     domain = Column(String(500), nullable=False)
     discovered_at = Column(DateTime, default=datetime.utcnow)
+    score = Column(Integer)
+    risk_level = Column(String(20))
+    matched_keyword = Column(String(255))
+    matched_tld = Column(String(50))
+    classification = Column(Text)
     
     # Relationships
     search = relationship("Search", back_populates="results")
@@ -157,11 +174,21 @@ class Result(Base):
             "id": self.id,
             "search_id": self.search_id,
             "domain": self.domain,
-            "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None
+            "discovered_at": self.discovered_at.isoformat() if self.discovered_at else None,
+            "score": self.score,
+            "risk_level": self.risk_level,
+            "matched_keyword": self.matched_keyword,
+            "matched_tld": self.matched_tld,
         }
         
         if search_name:
             result["search_name"] = search_name
+
+        if self.classification:
+            try:
+                result["classification"] = json.loads(self.classification)
+            except (TypeError, ValueError):
+                result["classification"] = self.classification
         
         return result
 
@@ -202,10 +229,37 @@ class Database:
         
         # Create tables
         Base.metadata.create_all(self.engine)
+        self._run_migrations()
         
         # Create session factory
         self.session_factory = sessionmaker(bind=self.engine)
         self.Session = scoped_session(self.session_factory)
+
+    def _run_migrations(self):
+        """Apply minimal schema migrations for existing installations."""
+        inspector = inspect(self.engine)
+        if "results" not in inspector.get_table_names():
+            return
+
+        existing_columns = {col["name"] for col in inspector.get_columns("results")}
+        statements = []
+        if "score" not in existing_columns:
+            statements.append("ALTER TABLE results ADD COLUMN score INTEGER")
+        if "risk_level" not in existing_columns:
+            statements.append("ALTER TABLE results ADD COLUMN risk_level VARCHAR(20)")
+        if "matched_keyword" not in existing_columns:
+            statements.append("ALTER TABLE results ADD COLUMN matched_keyword VARCHAR(255)")
+        if "matched_tld" not in existing_columns:
+            statements.append("ALTER TABLE results ADD COLUMN matched_tld VARCHAR(50)")
+        if "classification" not in existing_columns:
+            statements.append("ALTER TABLE results ADD COLUMN classification TEXT")
+
+        if not statements:
+            return
+
+        with self.engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
     
     @contextmanager
     def session_scope(self):
@@ -387,29 +441,80 @@ class Database:
             return False
     
     # Result operations
-    def add_result(self, search_id: int, domain: str):
-        """Add a new result (discovered domain)"""
+    def add_result(
+        self,
+        search_id: int,
+        domain: str,
+        *,
+        score: int = None,
+        risk_level: str = None,
+        matched_keyword: str = None,
+        matched_tld: str = None,
+        classification: Optional[Dict[str, object]] = None,
+    ):
+        """Add a new result (discovered domain) with optional classification metadata."""
+        serialized = None
+        if classification:
+            if isinstance(classification, str):
+                serialized = classification
+            else:
+                serialized = json.dumps(classification, ensure_ascii=False)
+
         with self.session_scope() as session:
-            result = Result(search_id=search_id, domain=domain)
+            result = Result(
+                search_id=search_id,
+                domain=domain,
+                score=score,
+                risk_level=risk_level,
+                matched_keyword=matched_keyword,
+                matched_tld=matched_tld,
+                classification=serialized,
+            )
             session.add(result)
     
-    def get_results(self, search_id: int, limit: int = 100, offset: int = 0) -> List[Result]:
-        """Get results for a search with pagination"""
+    def get_results(
+        self,
+        search_id: int,
+        limit: int = 100,
+        offset: int = 0,
+        *,
+        min_score: int = None,
+        risk: Optional[str] = None,
+    ) -> List[Result]:
+        """Get results for a search with pagination and optional filters"""
         with self.session_scope() as session:
-            results = (session.query(Result)
-                      .filter_by(search_id=search_id)
-                      .order_by(Result.discovered_at.desc())
-                      .limit(limit)
-                      .offset(offset)
-                      .all())
+            query = session.query(Result).filter_by(search_id=search_id)
+
+            if min_score is not None:
+                query = query.filter(Result.score >= min_score)
+            if risk:
+                query = query.filter(Result.risk_level == risk)
+
+            results = (
+                query.order_by(Result.discovered_at.desc(), Result.id.desc())
+                .limit(limit)
+                .offset(offset)
+                .all()
+            )
             for result in results:
                 session.expunge(result)
             return results
     
-    def count_results(self, search_id: int) -> int:
-        """Count total results for a search"""
+    def count_results(
+        self,
+        search_id: int,
+        *,
+        min_score: int = None,
+        risk: Optional[str] = None,
+    ) -> int:
+        """Count total results for a search matching optional filters"""
         with self.session_scope() as session:
-            return session.query(Result).filter_by(search_id=search_id).count()
+            query = session.query(Result).filter_by(search_id=search_id)
+            if min_score is not None:
+                query = query.filter(Result.score >= min_score)
+            if risk:
+                query = query.filter(Result.risk_level == risk)
+            return query.count()
     
     def get_recent_results(self, limit: int = 50) -> List[Result]:
         """Get most recent results across all searches"""

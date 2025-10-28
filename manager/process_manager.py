@@ -11,6 +11,7 @@ from datetime import datetime
 
 from .config import CERTPATROL_CMD, MAX_CONCURRENT_SEARCHES
 from .database import db
+from .classifier import get_classifier
 
 
 class SearchProcess:
@@ -40,6 +41,7 @@ class SearchProcess:
         self.process = None
         self.thread = None
         self.running = False
+        self.classifier = get_classifier()
     
     def start(self):
         """Start the CertPatrol process"""
@@ -172,9 +174,23 @@ class SearchProcess:
                 if '.' not in domain or ' ' in domain:
                     continue
                 
+                classification = None
+                try:
+                    classification = self.classifier.classify(domain)
+                except Exception as err:
+                    print(f"Classification error for {domain}: {err}")
+
                 # Save valid domain to database
                 try:
-                    db.add_result(self.search_id, domain)
+                    db.add_result(
+                        self.search_id,
+                        domain,
+                        score=classification.score if classification else None,
+                        risk_level=classification.risk if classification else None,
+                        matched_keyword=classification.matched_keyword if classification else None,
+                        matched_tld=classification.matched_tld if classification else None,
+                        classification=classification.to_record() if classification else None,
+                    )
                 except Exception as e:
                     print(f"Error saving result: {e}")
             
@@ -304,4 +320,3 @@ class ProcessManager:
 
 # Global process manager instance
 process_manager = ProcessManager()
-

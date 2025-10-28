@@ -190,7 +190,81 @@ def cmd_status(args):
             print(f"      Project: {project.name if project else 'Unknown'}")
             print(f"      Pattern: {search.pattern}")
             print()
-    
+
+    return 0
+
+
+def cmd_results(args):
+    """Show discovered domains for a search"""
+    db.initialize()
+
+    search = db.get_search(args.search_id)
+    if not search:
+        print(f"Error: Search {args.search_id} not found", file=sys.stderr)
+        return 1
+
+    risk = args.risk.lower() if args.risk else None
+    try:
+        results = db.get_results(
+            search.id,
+            limit=args.limit,
+            offset=args.offset,
+            min_score=args.min_score,
+            risk=risk,
+        )
+        total = db.count_results(
+            search.id,
+            min_score=args.min_score,
+            risk=risk,
+        )
+    except Exception as exc:
+        print(f"Error fetching results: {exc}", file=sys.stderr)
+        return 1
+
+    payload = {
+        "search": {"id": search.id, "name": search.name},
+        "filters": {"min_score": args.min_score, "risk": risk},
+        "total": total,
+        "limit": args.limit,
+        "offset": args.offset,
+        "results": [r.to_dict() for r in results],
+    }
+
+    if args.json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(f"Results for search [{search.id}] {search.name}")
+    if args.min_score is not None or risk:
+        filters = []
+        if args.min_score is not None:
+            filters.append(f"min_score={args.min_score}")
+        if risk:
+            filters.append(f"risk={risk}")
+        print(f"  Filters: {', '.join(filters)}")
+    print(f"  Showing {len(results)} of {total} total matches (offset {args.offset})\n")
+
+    if not results:
+        print("No results found")
+        return 0
+
+    for result in results:
+        data = result.to_dict()
+        score = data.get("score")
+        score_display = score if isinstance(score, int) else "-"
+        risk_level = (data.get("risk_level") or "unknown").upper()
+        discovered_at = data.get("discovered_at") or "-"
+        print(f"  {data['domain']}")
+        print(f"      risk={risk_level} score={score_display} discovered={discovered_at}")
+        matched_keyword = data.get("matched_keyword")
+        matched_tld = data.get("matched_tld")
+        if matched_keyword or matched_tld:
+            extra = []
+            if matched_keyword:
+                extra.append(f"keyword:{matched_keyword}")
+            if matched_tld:
+                extra.append(f"tld:{matched_tld}")
+            print(f"      matches: {', '.join(extra)}")
     return 0
 
 
@@ -256,7 +330,17 @@ def main():
     parser_stop = subparsers.add_parser('stop', help='Stop a search', parents=[common_options])
     parser_stop.add_argument('search_id', type=int, help='Search ID')
     parser_stop.set_defaults(func=cmd_stop)
-    
+
+    # results command
+    parser_results = subparsers.add_parser('results', help='Show discovered domains for a search', parents=[common_options])
+    parser_results.add_argument('search_id', type=int, help='Search ID')
+    parser_results.add_argument('--limit', type=int, default=20, help='Number of rows to display (default: 20)')
+    parser_results.add_argument('--offset', type=int, default=0, help='Result offset for pagination')
+    parser_results.add_argument('--min-score', dest='min_score', type=int, help='Filter by minimum score')
+    parser_results.add_argument('--risk', choices=['critical', 'high', 'medium', 'low', 'unknown'], help='Filter by risk level')
+    parser_results.add_argument('--json', action='store_true', help='Output JSON instead of text')
+    parser_results.set_defaults(func=cmd_results)
+
     # status command
     parser_status = subparsers.add_parser('status', help='Show status of all searches', parents=[common_options])
     parser_status.set_defaults(func=cmd_status)

@@ -3,6 +3,14 @@
 {% block title %}Results - {{ search.name }} - CertPatrol Orchestrator{% endblock %}
 
 {% block content %}
+<style>
+    .results-table {
+        table-layout: fixed;
+    }
+    .results-table .domain-cell {
+        word-break: break-word;
+    }
+</style>
 <div class="px-4 sm:px-0">
     <!-- Breadcrumbs -->
     <nav class="flex flex-wrap mb-6" aria-label="Breadcrumb">
@@ -72,17 +80,41 @@
     <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="px-4 py-5 sm:p-6">
             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Discovered Domains</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                    <label class="flex flex-col text-sm text-gray-600">
+                        <span class="font-medium text-gray-700 mb-1">Minimum Score</span>
+                        <input type="number" id="minScoreFilter" class="w-full sm:w-36 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500" placeholder="e.g. 80" min="0">
+                    </label>
+                    <label class="flex flex-col text-sm text-gray-600">
+                        <span class="font-medium text-gray-700 mb-1">Risk Level</span>
+                        <select id="riskFilter" class="w-full sm:w-40 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">All</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                    </label>
+                </div>
+                <button id="resetFilters" class="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Reset Filters
+                </button>
+            </div>
+            <div class="overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200 results-table">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discovered At</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:50%">Domain</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:18%">Risk</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:12%">Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:20%">Discovered At</th>
                         </tr>
                     </thead>
                     <tbody id="results-table" class="bg-white divide-y divide-gray-200">
                         <tr>
-                            <td colspan="2" class="px-6 py-4 text-sm text-gray-500">Loading...</td>
+                            <td colspan="4" class="px-6 py-4 text-sm text-gray-500">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -112,51 +144,165 @@
     let currentOffset = 0;
     const limit = 50;
     let totalResults = 0;
-    
-    // Load project name for breadcrumb
+
+    const minScoreInput = document.getElementById('minScoreFilter');
+    const riskSelect = document.getElementById('riskFilter');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+
+    function getFilters() {
+        const filters = {};
+        const minValue = parseInt(minScoreInput.value, 10);
+        if (!Number.isNaN(minValue)) {
+            filters.min_score = minValue;
+        }
+        if (riskSelect.value) {
+            filters.risk = riskSelect.value;
+        }
+        return filters;
+    }
+
+    function renderRiskBadge(risk) {
+        if (!risk) {
+            return '<span class="text-sm text-gray-400">-</span>';
+        }
+        const classes = {
+            critical: 'bg-red-100 text-red-800',
+            high: 'bg-orange-100 text-orange-800',
+            medium: 'bg-yellow-100 text-yellow-800',
+            low: 'bg-blue-100 text-blue-800',
+            unknown: 'bg-gray-100 text-gray-700',
+        };
+        const badgeClass = classes[risk] || classes.unknown;
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${risk.toUpperCase()}</span>`;
+    }
+
+    function renderMeta(result) {
+        if (!result.risk_level || result.risk_level === 'unknown') {
+            return '';
+        }
+        const meta = [];
+        if (result.matched_keyword) {
+            meta.push(`Keyword: ${result.matched_keyword}`);
+        }
+        if (result.matched_tld) {
+            meta.push(`TLD: ${result.matched_tld}`);
+        }
+        if (!meta.length) {
+            return '';
+        }
+        return `<div class="mt-1 text-xs text-gray-500">${meta.join(' • ')}</div>`;
+    }
+
+    function bindFilterControls() {
+        const triggerReload = () => {
+            currentOffset = 0;
+            loadResults();
+        };
+        minScoreInput.addEventListener('change', triggerReload);
+        minScoreInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                triggerReload();
+            }
+        });
+        riskSelect.addEventListener('change', triggerReload);
+        resetFiltersBtn.addEventListener('click', () => {
+            minScoreInput.value = '';
+            riskSelect.value = '';
+            triggerReload();
+        });
+    }
+
     async function loadProjectName() {
         try {
             const res = await fetch(`/api/projects/${projectId}`);
+            if (!res.ok) {
+                throw new Error('Failed to load project');
+            }
             const project = await res.json();
             document.getElementById('project-breadcrumb').textContent = project.name;
         } catch (error) {
             console.error('Error loading project name:', error);
         }
     }
-    
+
     async function loadResults() {
         try {
-            const res = await fetch(`/api/searches/${searchId}/results?limit=${limit}&offset=${currentOffset}`);
+            const filters = getFilters();
+            const params = new URLSearchParams({
+                limit: limit.toString(),
+                offset: currentOffset.toString(),
+            });
+            if (filters.min_score !== undefined) {
+                params.append('min_score', filters.min_score);
+            }
+            if (filters.risk) {
+                params.append('risk', filters.risk);
+            }
+
+            const res = await fetch(`/api/searches/${searchId}/results?${params.toString()}`);
+            if (!res.ok) {
+                throw new Error('Failed to load results');
+            }
             const data = await res.json();
-            
+
+            if (data.filters) {
+                if (typeof data.filters.min_score === 'number') {
+                    minScoreInput.value = data.filters.min_score;
+                } else if (data.filters.min_score === null) {
+                    minScoreInput.value = '';
+                }
+                if (data.filters.risk) {
+                    riskSelect.value = data.filters.risk;
+                } else {
+                    riskSelect.value = '';
+                }
+            }
+
             totalResults = data.total;
             document.getElementById('total-results').textContent = totalResults;
-            
+
             const table = document.getElementById('results-table');
-            if (data.results.length === 0 && currentOffset === 0) {
-                table.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-sm text-gray-500">No results yet</td></tr>';
-            } else if (data.results.length === 0) {
-                table.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-sm text-gray-500">No more results</td></tr>';
+            if (!data.results.length) {
+                const message = currentOffset === 0 ? 'No results yet' : 'No more results';
+                table.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500">${message}</td></tr>`;
             } else {
-                table.innerHTML = data.results.map(r => `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${r.domain}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(r.discovered_at).toLocaleString()}</td>
-                    </tr>
-                `).join('');
+                table.innerHTML = data.results.map((r) => {
+                    const riskBadge = renderRiskBadge(r.risk_level);
+                    const score = typeof r.score === 'number' ? r.score : '-';
+                    const discoveredAt = r.discovered_at ? new Date(r.discovered_at).toLocaleString() : '-';
+                    const meta = renderMeta(r);
+                    return `
+                        <tr>
+                            <td class="domain-cell px-6 py-4 text-sm font-medium text-gray-900 whitespace-normal break-words align-top leading-5">
+                                ${r.domain}${meta}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap align-top text-sm">${riskBadge}</td>
+                            <td class="px-6 py-4 whitespace-nowrap align-top text-sm text-gray-700">${score}</td>
+                            <td class="px-6 py-4 whitespace-nowrap align-top text-sm text-gray-500">${discoveredAt}</td>
+                        </tr>
+                    `;
+                }).join('');
             }
-            
-            // Update pagination buttons
+
             document.getElementById('prevBtn').disabled = currentOffset === 0;
             document.getElementById('nextBtn').disabled = currentOffset + limit >= totalResults;
             document.getElementById('currentPage').textContent = Math.floor(currentOffset / limit) + 1;
-            
-            // Load search status and controls
+
+            await refreshStatus();
+        } catch (error) {
+            console.error('Error loading results:', error);
+        }
+    }
+
+    async function refreshStatus() {
+        try {
             const statusRes = await fetch(`/api/searches/${searchId}`);
+            if (!statusRes.ok) {
+                throw new Error('Failed to load status');
+            }
             const search = await statusRes.json();
             const statusEl = document.getElementById('search-status');
-            
-            // Update status display
+
             let statusHTML = '';
             if (search.status === 'running') {
                 statusHTML = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"><span class="w-2 h-2 mr-2 bg-green-400 rounded-full animate-pulse"></span>RUNNING</span>';
@@ -166,8 +312,7 @@
                 statusHTML = '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">CRASHED</span>';
             }
             statusEl.innerHTML = statusHTML;
-            
-            // Update controls
+
             const controlsEl = document.getElementById('search-controls');
             let controlsHTML = '';
             if (search.status === 'stopped' || search.status === 'crashed') {
@@ -193,27 +338,27 @@
             }
             controlsEl.innerHTML = controlsHTML;
         } catch (error) {
-            console.error('Error loading results:', error);
+            console.error('Error refreshing status:', error);
         }
     }
-    
+
     function nextPage() {
         if (currentOffset + limit < totalResults) {
             currentOffset += limit;
             loadResults();
         }
     }
-    
+
     function prevPage() {
         if (currentOffset > 0) {
             currentOffset -= limit;
             loadResults();
         }
     }
-    
+
     async function startSearch() {
         try {
-            const res = await fetch(`/api/searches/${searchId}/start`, {method: 'POST'});
+            const res = await fetch(`/api/searches/${searchId}/start`, { method: 'POST' });
             if (res.ok) {
                 setTimeout(loadResults, 500);
             } else {
@@ -224,11 +369,11 @@
             alert('Error starting search: ' + error);
         }
     }
-    
+
     async function stopSearch() {
         if (!confirm('Stop this search?')) return;
         try {
-            const res = await fetch(`/api/searches/${searchId}/stop`, {method: 'POST'});
+            const res = await fetch(`/api/searches/${searchId}/stop`, { method: 'POST' });
             if (res.ok) {
                 setTimeout(loadResults, 500);
             } else {
@@ -239,9 +384,14 @@
             alert('Error stopping search: ' + error);
         }
     }
-    
+
+    function autoRefresh() {
+        loadResults();
+    }
+
+    bindFilterControls();
     loadProjectName();
     loadResults();
-    setInterval(loadResults, 5000); // Refresh every 5 seconds
+    setInterval(autoRefresh, 15000);
 </script>
 {% endblock %}

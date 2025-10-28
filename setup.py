@@ -24,7 +24,7 @@ else:
 
 setup(
     name="certpatrol-orchestrator",
-    version="0.1.4",
+    version="0.1.5",
     author="Martin Aberastegue",
     author_email="martin.aberastegue@torito.io",
     description="Process orchestration platform for managing multiple CertPatrol instances",
@@ -58,6 +58,7 @@ setup(
             "web/templates/*.html",
             "web/static/css/*.css",
             "web/static/js/*.js",
+            "data/*.yaml",
         ],
     },
 )

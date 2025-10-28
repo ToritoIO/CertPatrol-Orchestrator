@@ -12,6 +12,7 @@ Process orchestration platform for managing multiple [CertPatrol](https://github
 - **Real-time Monitoring**: Live dashboard showing active searches and recent discoveries
 - **Database Storage**: All results persistently stored in SQLite
 - **CLI Interface**: Command-line tools for automation
+- **Risk Classification**: Inline phishing heuristics with severity scoring and keyword highlights
 - **Process Isolation**: Each search runs independently - crashes don't affect others
 
 ## Architecture
@@ -183,8 +184,31 @@ Environment variables:
 1. Manager spawns CertPatrol as subprocess: `certpatrol -p <pattern> -c search_<id> -q`
 2. Background thread reads stdout line-by-line
 3. Each line (domain) is saved to database
-4. Web UI queries database for display
-5. Process status tracked in real-time
+4. Domains are scored using phishing heuristics (entropy, keywords, lookalike detection)
+5. Web UI queries database for display with risk badges and keyword highlights
+6. Process status tracked in real-time
+
+## Risk Classification
+
+CertPatrol Orchestrator bundles a lightweight phishing classifier inspired by [catch_phishing](https://github.com/x0rz/phishing_catcher) (credit to @x0rz). Each discovered domain is enriched with:
+
+- **Score**: Aggregated heuristics (entropy, suspicious keywords, TLD patterns, Levenshtein lookalikes, hyphen/subdomain depth)
+- **Risk level**: `critical`, `high`, `medium`, `low`, or `unknown` (score < 65)
+- **Matched metadata**: Top keyword/TLD contributors for non-`unknown` results
+
+You can filter classifications via the Web UI controls or from the CLI:
+
+```bash
+certpatrol-orch results <search_id> --min-score 80 --risk high
+```
+
+### Customising heuristics
+
+- Default rules live in `manager/data/suspicious.yaml`. Copy it and tweak keyword weights, TLDs, or thresholds as needed.
+- Point the orchestrator at a custom rules file by setting `MANAGER_RULES_PATH=/path/to/your_rules.yaml` before starting the server.
+- YAML changes are hot-reloaded (mtime check) without restarting the process.
+
+If you have Python-Levenshtein installed it will be used automatically; otherwise the bundled RapidFuzz fallback keeps scoring online.
 
 ## API Endpoints
 
