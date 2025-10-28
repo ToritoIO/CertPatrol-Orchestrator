@@ -170,8 +170,20 @@ class Database:
     """Database manager with connection pooling and session management"""
     
     def __init__(self, db_path: str = None):
-        self.db_path = db_path or DATABASE_PATH
+        self.db_path = os.path.abspath(db_path) if db_path else DATABASE_PATH
         self.engine = None
+        self.session_factory = None
+        self.Session = None
+    
+    def set_path(self, db_path: str):
+        """Override database path and reset existing connections"""
+        new_path = os.path.abspath(db_path)
+        if new_path == self.db_path:
+            return
+        self.db_path = new_path
+        if self.engine:
+            self.engine.dispose()
+            self.engine = None
         self.session_factory = None
         self.Session = None
     

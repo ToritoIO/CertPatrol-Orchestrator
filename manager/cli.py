@@ -196,34 +196,44 @@ def cmd_status(args):
 
 def main():
     """Main CLI entry point"""
+    common_options = argparse.ArgumentParser(add_help=False)
+    common_options.add_argument(
+        '--database',
+        '--db',
+        '-f',
+        dest='database',
+        help=f'Path to the SQLite database file (default: {db.db_path})'
+    )
+
     parser = argparse.ArgumentParser(
-        description="CertPatrol Orchestrator - Process Orchestration for CertPatrol"
+        description="CertPatrol Orchestrator - Process Orchestration for CertPatrol",
+        parents=[common_options]
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
     # init command
-    parser_init = subparsers.add_parser('init', help='Initialize database')
+    parser_init = subparsers.add_parser('init', help='Initialize database', parents=[common_options])
     parser_init.set_defaults(func=cmd_init)
     
     # server command
-    parser_server = subparsers.add_parser('server', help='Start web server')
+    parser_server = subparsers.add_parser('server', help='Start web server', parents=[common_options])
     parser_server.add_argument('--port', '-p', type=int, default=PORT, help=f'Port to bind to (default: {PORT})')
     parser_server.add_argument('--debug', action='store_true', default=DEBUG, help='Enable debug mode')
     parser_server.set_defaults(func=cmd_server)
     
     # add-project command
-    parser_add_project = subparsers.add_parser('add-project', help='Create a new project')
+    parser_add_project = subparsers.add_parser('add-project', help='Create a new project', parents=[common_options])
     parser_add_project.add_argument('name', help='Project name')
     parser_add_project.add_argument('--description', '-d', help='Project description')
     parser_add_project.set_defaults(func=cmd_add_project)
     
     # list-projects command
-    parser_list_projects = subparsers.add_parser('list-projects', help='List all projects')
+    parser_list_projects = subparsers.add_parser('list-projects', help='List all projects', parents=[common_options])
     parser_list_projects.set_defaults(func=cmd_list_projects)
     
     # add-search command
-    parser_add_search = subparsers.add_parser('add-search', help='Add a new search')
+    parser_add_search = subparsers.add_parser('add-search', help='Add a new search', parents=[common_options])
     parser_add_search.add_argument('project', help='Project name or ID')
     parser_add_search.add_argument('name', help='Search name')
     parser_add_search.add_argument('pattern', help='Regex pattern')
@@ -233,25 +243,28 @@ def main():
     parser_add_search.set_defaults(func=cmd_add_search)
     
     # list-searches command
-    parser_list_searches = subparsers.add_parser('list-searches', help='List all searches')
+    parser_list_searches = subparsers.add_parser('list-searches', help='List all searches', parents=[common_options])
     parser_list_searches.add_argument('--project', '-p', help='Filter by project name or ID')
     parser_list_searches.set_defaults(func=cmd_list_searches)
     
     # start command
-    parser_start = subparsers.add_parser('start', help='Start a search')
+    parser_start = subparsers.add_parser('start', help='Start a search', parents=[common_options])
     parser_start.add_argument('search_id', type=int, help='Search ID')
     parser_start.set_defaults(func=cmd_start)
     
     # stop command
-    parser_stop = subparsers.add_parser('stop', help='Stop a search')
+    parser_stop = subparsers.add_parser('stop', help='Stop a search', parents=[common_options])
     parser_stop.add_argument('search_id', type=int, help='Search ID')
     parser_stop.set_defaults(func=cmd_stop)
     
     # status command
-    parser_status = subparsers.add_parser('status', help='Show status of all searches')
+    parser_status = subparsers.add_parser('status', help='Show status of all searches', parents=[common_options])
     parser_status.set_defaults(func=cmd_status)
     
     args = parser.parse_args()
+    
+    if hasattr(args, 'database') and args.database:
+        db.set_path(args.database)
     
     if not args.command:
         parser.print_help()

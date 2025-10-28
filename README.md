@@ -44,6 +44,8 @@ pip install -e .
 ### 1. Initialize the database
 ```bash
 certpatrol-orch init
+# or point to a custom location (relative paths are resolved from the current directory)
+# certpatrol-orch init -f ./localdb.sqlite
 ```
 
 ### 2. Start the web server
@@ -52,6 +54,8 @@ certpatrol-orch init
 certpatrol-orch server
 # or pick a different port
 # certpatrol-orch server --port 9090
+# or reuse the custom database from the previous step
+# certpatrol-orch server -f ./localdb.sqlite
 ```
 
 Then open http://127.0.0.1:8080 in your browser.
@@ -85,15 +89,31 @@ certpatrol-orch status
 ## CLI Commands
 
 ```bash
-certpatrol-orch init                          # Initialize database
-certpatrol-orch server [--port | -p]          # Start web server
-certpatrol-orch add-project <name>            # Create project
-certpatrol-orch list-projects                 # List all projects
-certpatrol-orch add-search <project> <name> <pattern>  # Add search
-certpatrol-orch list-searches [--project]     # List searches
-certpatrol-orch start <search_id>             # Start search
-certpatrol-orch stop <search_id>              # Stop search
-certpatrol-orch status                        # Show all search statuses
+certpatrol-orch init [-f | --db <path>]                 # Initialize database
+certpatrol-orch server [--port | -p <port>] [-f | --db <path>]  # Start web server
+certpatrol-orch add-project <name> [-d description]     # Create project
+certpatrol-orch list-projects [-f | --db <path>]        # List all projects
+certpatrol-orch add-search <project> <name> <pattern>   # Add search
+certpatrol-orch list-searches [--project <name_or_id>] [-f | --db <path>]  # List searches
+certpatrol-orch start <search_id>                       # Start search
+certpatrol-orch stop <search_id>                        # Stop search
+certpatrol-orch status                                   # Show all search statuses
+```
+
+### Custom database locations
+
+By default the orchestrator stores data in `certpatrol_manager.db` inside the project directory.  
+Use any of the equivalent flags `-f`, `--db`, or `--database` to point commands at a different SQLite file:
+
+```bash
+# Store everything alongside the current project
+certpatrol-orch init -f ./data/orchestrator.sqlite
+
+# Run the web UI against the same file later
+certpatrol-orch server --db ./data/orchestrator.sqlite
+
+# List projects from a shared database on another disk
+certpatrol-orch list-projects --database /Volumes/shared/certpatrol.sqlite
 ```
 
 ## Web UI
